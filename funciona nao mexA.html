@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title></title>
+    <link rel="stylesheet" href="codemirror.css">
+    <style>
+        .CodeMirror {
+            height: 200px;
+            width: 100%;
+            border: 0px solid #ccc;
+        }
+        #preview{
+            width: 100%;
+        }
+        .hide {
+            display: none;
+        }
+
+        .toggle-button {
+            width: 50px;
+            left: 0px!important
+            font-size: 12pt;
+            background-image: linear-gradient(to right, lightpink, lightyellow);
+            border-style: inset;
+            border-radius: 10px;
+            font-weight: bold;
+            text-align: left;
+            position: relative;
+        }
+    </style>
+</head>
+
+<body>
+    <button onclick="updateArray()">Atualizar Array 1</button>
+
+    <tr>
+        <td>
+            <textarea id="console"></textarea><br>
+            <button onclick="concatenarArray()">Concatenar</button>
+            <br><br>
+            
+            <iframe id="preview"></iframe>
+        </td>
+    </tr>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.0/addon/display/autorefresh.js"></script>
+    <script src="codemirror.js"></script>
+    <script src="xml.js"></script>
+    <script src="css.js"></script>
+    <script src="htmlmixed.js"></script>
+    <script src="show-hint.js"></script>
+    <script src="javascript-hint.js"></script>
+    <script>
+        // Declaração de variáveis
+        var fileArray = []; // Armazena os valores do arquivo
+        var consoleTextArea; // Referência à textarea do console
+        var consoleEditor; // Instância do CodeMirror para a textarea do console
+        var position = 0;
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            async function loadFileArray() {
+                const response = await fetch("codes.txt");
+                const data = await response.text();
+                const lines = data.split('</textarea>');
+                fileArray = lines.map(line => line.trim());
+                return fileArray;
+            }
+
+            // Função para criar a lista de seleção dinamicamente
+            async function createSelectList() {
+                fileArray = await loadFileArray();
+
+                var select = document.createElement('select');
+                select.id = 'selector';
+                select.className = 'toggle-button';
+                select.onchange = function() {
+                    loadFile(this.value);
+                };
+
+                for (var i = 0; i < fileArray.length; i++) {
+                    var option = document.createElement('option');
+                    option.textContent = 'Opção ' + (i + 1);
+                    option.value = 'button' + (i + 1);
+                    option.id = 'button' + (i + 1);
+                    option.className = 'toggle-button';
+
+                    select.appendChild(option);
+                }
+
+                document.body.appendChild(select); // Adiciona a lista de seleção ao body
+            }
+
+            await createSelectList();
+
+            function initialize() {
+                // Obter referência à textarea do console
+                consoleTextArea = document.getElementById('console');
+
+                // Inicializar o editor CodeMirror para a textarea do console
+                consoleEditor = CodeMirror.fromTextArea(consoleTextArea, {
+                    mode: 'htmlmixed',
+                    theme: 'default',
+                    lineNumbers: true,
+                    scrollbarStyle: 'null'
+                });
+var previewFrame = document.getElementById("preview");
+    consoleEditor.on("change", function () {
+      var code = consoleEditor.getValue();
+      previewFrame.srcdoc = code;
+    });
+                // Carregar o conteúdo inicial
+                loadFile('button1');
+            }
+
+            // Carregar o arquivo e configurar os eventos dos botões
+            loadFileArray().then(initialize);
+        });
+
+        // Função para carregar o conteúdo do arquivo no div selecionado
+    function loadFile(targetOptionValue) {
+    var optionIndex = parseInt(targetOptionValue.replace("button", "")) - 1;
+    
+    if (optionIndex >= 0 && optionIndex < fileArray.length) {
+        consoleTextArea.value = fileArray[optionIndex];
+        position = optionIndex;
+    }
+    
+    consoleEditor.setValue(consoleTextArea.value);
+    consoleEditor.focus();
+    updatePreview();
+}
+
+        // Função para atualizar o valor do array na posição 1 com o valor do console
+        function updateArray() {
+            fileArray[position] = consoleEditor.getValue();
+        }
+
+        function concatenarArray() {
+            var concatenated = fileArray.join("<000>"+ "\n");
+
+            // Solicitar o nome do arquivo ao usuário
+            var fileName = prompt("Digite o nome do arquivo:");
+
+            if (fileName) {
+                fileName += '.txt'; // Adicionar a extensão .txt ao nome do arquivo
+
+                // Criar um novo arquivo com o texto concatenado
+                const blob = new Blob([concatenated], { type: 'text/plain' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = fileName;
+                link.click();
+                URL.revokeObjectURL(link.href);
+            } else {
+                console.log("O nome do arquivo não foi fornecido. O download não será realizado.");
+            }
+        }
+
+    </script>
+</body>
+
+</html>
